@@ -1,0 +1,146 @@
+//Usayd Code	
+open System
+open System.Threading
+
+// Task 1
+type Account =
+        {   accountNumber: string
+            mutable balance: float }
+
+        member this.Withdraw amount =
+            if amount < 0.0 then
+                printfn "Cant withdraw a negative amount"
+            elif this.balance < amount then
+                printfn "Balance is too low"
+            else
+                this.balance <- this.balance - amount
+
+        member this.Deposit amount =
+            if amount < 0.0 then
+                printfn "Cant deposit a negative amount!"
+            else
+                this.balance <- this.balance + amount
+
+        member this.Print() =
+            printfn "Balance for account %s is %.2f" this.accountNumber this.balance
+
+// Task 2
+let CheckAccount account =
+    match account.balance with
+    | b when b < 10.0 -> printfn "The balance is low"
+    | b when b >= 10.0 && b <= 100.0 -> printfn "The balance is OK"
+    | _ -> printfn "The balance is high"
+
+// Task 3
+let ListAccounts (xs: Account list) =
+    printfn "Accounts Listed"
+    xs |> List.map (fun a -> printf "\t";
+                                a.Print())
+
+// Task 4
+type Ticket = {seat:int; customer:string}
+let mutable tickets = [for n in 1..10 -> {Ticket.seat = n; Ticket.customer = ""}]
+let rec DisplayTickets xs =
+    match xs with
+    | h::t -> printfn "Seat: %02d | Customer: %s" h.seat h.customer;
+                DisplayTickets t
+    | _ -> printf ""
+
+let monitor = new Object()
+let BookSeat name seatNumber =
+    lock monitor (fun () ->
+        let rec helper xs =
+            match xs with
+            | h::t when h.seat = seatNumber -> {seat = h.seat; customer = name}::t
+            | h::t -> h::(helper t)
+            | _ -> []
+        tickets <- helper tickets)
+
+[<EntryPoint>]
+let main argv =
+
+    // Task 1 testing
+    printfn "\n----------- Task1 -----------\n"
+    let acc = { accountNumber = "UB161629"; balance = 10.78 }
+    acc.Print()
+    acc.Deposit 77.9
+    acc.Print()
+    acc.Deposit -7.0
+    acc.Withdraw -10.00
+    acc.Withdraw 78.0
+    acc.Print()
+    acc.Withdraw 5.00
+    acc.Print()
+
+    // Task 2 testing
+    printfn "\n----------- Task2 -----------\n"
+    let u1 = { accountNumber = "0001"; balance = 0.00 }
+    printf "u1: "
+    CheckAccount u1
+
+    let u2 = { accountNumber = "0002"; balance = 51.00 }
+    printf "u2: "
+    CheckAccount u2
+
+    let u3 = { accountNumber = "0003"; balance = 5.00 }
+    printf "u3: "
+    CheckAccount u3
+
+    let u4 = { accountNumber = "0004"; balance = 75.00 }
+    printf "u4: "
+    CheckAccount u4
+
+    let u5 = { accountNumber = "0005"; balance = 50.00 }
+    printf "a5: "
+    CheckAccount a5
+
+    let u6 = { accountNumber = "0006"; balance = 105.00 }
+    printf "u6: "
+    CheckAccount u6
+
+    // Task 3 testing
+    printfn "\n----------- Task3 -----------\n"
+    let accList = [u1; u2; u3; u4; u5; u6]
+    let zeroto50 = accList |> List.filter (fun a ->  a.balance >= 0.0 && a.balance < 50.0)
+    let more = accList |> List.filter (fun a ->  a.balance >= 50.0)
+    printfn "Accounts with balance 0 - 50:"
+    ListAccounts zeroto50 |> ignore
+    printfn ""
+    printfn "Accounts with balance >= 50:"
+    ListAccounts more |> ignore
+
+    // Task 4 testing
+    printfn "\n----------- Task4 -----------\n"
+    DisplayTickets tickets
+
+    printfn "\n assign tickets...\n"
+
+    // Making tasks
+    let tt1 = async { BookSeat "Customer 1" 7}
+    let tt2 = async { BookSeat "Customer 2" 3}
+
+    
+    [tt1;tt2]
+    |> Async.Parallel //Doing it all in a parallel 
+    |> Async.RunSynchronously 
+    |> ignore
+
+    DisplayTickets tickets
+
+    printfn ""
+
+    
+    let t1 = async { BookSeat "Sarah" 5}
+    let t2 = async { BookSeat "David" 8}
+    let t3 = async { BookSeat "Craig" 9}
+    let t4 = async { BookSeat "Josh" 2}
+
+    
+    [t1;t2;t3;t4]
+    |> Async.Parallel 
+    |> Async.RunSynchronously 
+    |> ignore
+
+    DisplayTickets tickets
+
+    0 // Return an integer
